@@ -1,0 +1,110 @@
+name: Smart Multistage
+
+on:
+  push: # körs vid varje push på alla branches
+    branches:
+      - '**'
+
+jobs:
+  # 1) Build job
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore MyService.sln
+
+      - name: Build
+        run: dotnet build MyService.sln --configuration Release --no-restore
+
+  # 2) Test job (beror på build)
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore MyService.sln
+
+      - name: Run tests
+        run: dotnet test MyService.Tests/MyService.Tests.csproj --configuration Release --no-restore --verbosity normal
+
+  # 3) Deploy till DEV (bara om testerna passerar)
+  deploy-dev:
+    runs-on: ubuntu-latest
+    needs: test
+    environment: development
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore MyService.sln
+
+      - name: Publish for DEV
+        run: dotnet publish MyService.Api/MyService.Api.csproj -c Release -o ./out-dev
+
+      - name: Show service name from repo vars
+        run: echo "Deploying service ${{ vars.SERVICE_NAME }} to DEV environment"
+
+      - name: Simulate DEV deployment
+        run: |
+          echo "Simulating deployment to DEV using files in ./out-dev"
+          ls ./out-dev
+
+  # 4) Deploy till PROD (bara om branch = main och tester OK)
+  deploy-prod:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore MyService.sln
+
+      - name: Publish for PRODUCTION
+        run: dotnet publish MyService.Api/MyService.Api.csproj -c Release -o ./out-prod
+
+      # Bonus: visa att secret används och maskeras
+      - name: Mask and use PROD API key
+        run: |
+          echo "::add-mask::${{ secrets.PROD_API_KEY }}"
+          echo "Using PROD API KEY: ${{ secrets.PROD_API_KEY }}"
+          echo "Service: ${{ vars.SERVICE_NAME }} deploying to PROD..."
+
+      - name: Simulate PROD deployment
+        run: |
+          echo "Simulating deployment to PROD using files in ./out-prod"
+          ls ./out-prod
+          echo "✅ Deployment completed successfully"
