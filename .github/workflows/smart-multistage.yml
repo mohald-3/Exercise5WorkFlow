@@ -51,6 +51,28 @@ jobs:
       - name: Run tests
         run: dotnet test Test/Test.csproj --configuration Release --no-restore --verbosity normal
 
+# 👇 New job: sends Discord notification after tests
+  notify-discord:
+    runs-on: ubuntu-latest
+    needs: test
+    if: ${{ always() }}   # run even if test job fails
+    env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+    steps:
+      - name: Notify Discord – Tests Succeeded
+        if: ${{ needs.test.result == 'success' }}
+        run: |
+          curl -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg content "✅ Tests PASSED for \($GITHUB_REPOSITORY) on branch \($GITHUB_REF_NAME). Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" '{content: $content}')"
+
+      - name: Notify Discord – Tests Failed
+        if: ${{ needs.test.result != 'success' }}
+        run: |
+          curl -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg content "❌ Tests FAILED for \($GITHUB_REPOSITORY) on branch \($GITHUB_REF_NAME). Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" '{content: $content}')"
+
   deploy-dev:
     runs-on: ubuntu-latest
     needs: test
