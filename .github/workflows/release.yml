@@ -1,0 +1,32 @@
+name: 🚀 Auto Release Notes
+
+on:
+  push:
+    tags:
+      - 'v*'          # runs when you push tags like v1.0.0, v2.3.4, etc.
+
+permissions:
+  contents: write     # needed to create a release
+
+jobs:
+  create-release:
+    name: 📄 Generate Release Notes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # get full history (useful for logs later if you want)
+
+      - name: ✨ Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          tag_name: ${{ github.ref_name }}                 # e.g. v1.0.0
+          release_name: "Release ${{ github.ref_name }}"   # e.g. Release v1.0.0
+          body: |
+            ## Changes since last version
+            ${{ github.event.head_commit.message }}
