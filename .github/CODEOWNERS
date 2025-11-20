@@ -1,0 +1,10 @@
+# .github/CODEOWNERS
+
+# Everything in the API project (default owner)
+API/*           @mohald-3
+
+# Controllers folder specifically (takes precedence over the line above)
+API/Controllers/*  @mohald-3
+
+# Tests go to "test responsible"
+Test/*         @mohald-3
