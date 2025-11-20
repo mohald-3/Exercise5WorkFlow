@@ -7,6 +7,7 @@ namespace API.Controllers
     [ApiController]
     public class MathController : ControllerBase
     {
+        // Controller
         // GET /api/math/add?x=2&y=3
         [HttpGet("add")]
         public int Add(int x, int y)
