@@ -1,7 +1,7 @@
 backend:
-  - paths:
-      - "API/**/*.cs"
+  - changed-files:
+      - any-glob-to-any-file: 'API/**/*.cs'
 
 tests:
-  - paths:
-      - "Test/**"
+  - changed-files:
+      - any-glob-to-any-file: 'Test/**'
