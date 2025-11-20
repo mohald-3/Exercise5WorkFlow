@@ -1,0 +1,5 @@
+backend:
+  - 'API/**/*.cs'     # all C# files under API
+
+tests:
+  - 'Test/**'         # anything under Test/
